@@ -51,3 +51,29 @@ wallet demo berdasarkan aksi dan peran. Private key dibaca dari
 Pengguna yang memiliki akses ke proses demo di laptop dapat memilih peran demo.
 Gunakan hanya akun dan data simulasi. CLI tetap tersedia di
 [panduan CLI](../cli/README.md).
+
+## Mode demo dan alur presentasi
+
+Klik **Mode demo**, lalu pilih **Alur normal** (10.000 → 9.800 kg) atau
+**Anomali berat** (10.000 → 1.000 kg). Gunakan tombol pada panel panduan untuk
+berpindah ke akun yang dibutuhkan. **Pakai berkas demo** mengisi input file
+setempat. Klik **Kirim transaksi** di setiap tahap dan tunggu receipt sebelum
+berpindah. Setiap skenario membuat manifest baru.
+
+| Bagian | Yang ditunjukkan | Narasi |
+| --- | --- | --- |
+| Jaringan | Nomor blok bertambah dan **Lihat set validator** | “Besu menjalankan QBFT. Tujuh alamat ini terdaftar sebagai validator dan blok memerlukan lima suara.” |
+| Manifest normal | Alur dari pembuatan hingga **Diolah** | “Selisih 2% ada di bawah ambang 5%, sehingga pengolahan dapat dilanjutkan.” |
+| Manifest anomali | Penerimaan 1.000 kg, flag terbuka, resolusi auditor | “Kontrak mendeteksi selisih 90%. Auditor mencatat hasil tinjauan sebelum pengolah dapat menyelesaikan manifest.” |
+| Integritas | **Ke verifikasi**, **Cek contoh asli**, **Cek contoh diubah**, lalu jejak audit | “Dokumen asli cocok dengan hash on-chain. Perubahan isi menghasilkan hash berbeda. Event dan receipt mencatat jejak tindakan.” |
+
+Tombol contoh verifikasi muncul setelah manifest demo selesai dan memakai
+dokumen contoh bawaan. Untuk dokumen sendiri, gunakan pemilih file. Jika waktu
+presentasi singkat, tampilkan satu manifest normal yang sudah selesai dan
+jalankan alur anomali secara live. Bukti uji quorum bisa ditunjukkan terpisah
+setelah transaksi demo, karena eksperimen menghentikan validator sementara.
+
+Jika dashboard menampilkan **RPC terhubung · data belum lengkap**, salah satu
+pembacaan set validator atau data kontrak gagal walaupun nomor blok tersedia.
+Dashboard mengosongkan metrik yang belum bisa dibaca. Untuk status node yang
+berjalan, cek `docker compose -f network/generated/compose.json ps`.
