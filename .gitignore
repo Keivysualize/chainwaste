@@ -1,0 +1,14 @@
+node_modules/
+artifacts/
+cache/
+coverage/
+coverage.json
+types/
+dist/
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
+
+network/generated/
