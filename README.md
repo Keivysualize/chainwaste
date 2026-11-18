@@ -69,6 +69,11 @@ Baca [panduan jaringan](network/README.md) untuk konfigurasi dan troubleshooting
 serta [panduan CLI](cli/README.md) untuk skenario normal, anomali, dan verifikasi
 dokumen. Simpan private key demo hanya di `network/generated/` pada mesin lokal.
 
+## Dashboard web
+
+Setelah Besu dan kontrak siap, jalankan `node web/server.mjs` dan buka
+`http://127.0.0.1:4173/`. Lihat [panduan demo web](web/README.md).
+
 ## Hasil dan bukti
 
 - **Hardhat:** 15 tes lulus, terdiri dari 10 tes ChainWaste dan 5 tes template.
