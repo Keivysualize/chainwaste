@@ -3,7 +3,7 @@
 | Anggota | Pekerjaan yang tercatat | Bukti |
 | --- | --- | --- |
 | Muhammad Wahyu Hidayat (2310101015) | Inisialisasi repositori dan proyek Hardhat. Menjalankan tes kontrak, deployment Besu, benchmark transaksi, uji quorum, serta verifikasi CLI normal dan anomali pada Windows. | [Commit awal](https://github.com/Keivysualize/chainwaste/commit/beebea9) dan [hasil pengujian](docs/testing-results.md). |
-| Jonathan Axel T (2310101009) | Implementasi, pengujian, atau dokumentasi yang dikerjakan sendiri masih perlu dicatat setelah ada bukti. | Tambahkan tautan commit/PR asli dan ringkasan pekerjaan yang diselesaikan sebelum pengumpulan. |
+| Jonathan Axel T (2310101012) | Implementasi, pengujian, atau dokumentasi yang dikerjakan sendiri masih perlu dicatat setelah ada bukti. | Tambahkan tautan commit/PR asli dan ringkasan pekerjaan yang diselesaikan sebelum pengumpulan. |
 
 ## Riwayat implementasi
 
