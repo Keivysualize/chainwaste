@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChainWaste | Manifest Limbah B3</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <div class="brand"><span class="mark">CW</span> ChainWaste</div>
+    <div class="account"><label for="role">Akun aktif</label><select id="role">
+      <option value="generator">Pabrik penghasil</option>
+      <option value="transporter">Pengangkut</option>
+      <option value="processor">Pengolah</option>
+      <option value="oracle">Oracle timbangan</option>
+      <option value="auditor">Auditor</option>
+      <option value="regulator">Regulator</option>
+    </select><span id="address"></span></div>
+  </header>
+  <main>
+    <div class="heading"><div><h1>Manifest Limbah B3</h1><p>Lacak pengangkutan, penerimaan, dan pengolahan.</p></div>
+      <span class="network-status" id="connection" role="status">Menghubungkan ke Besu…</span>
+    </div>
+    <section class="metrics" aria-label="Status jaringan">
+      <div><span>Validator QBFT</span><strong id="validators">—</strong></div>
+      <div><span>Blok terbaru</span><strong id="height">—</strong></div>
+      <div><span>Chain ID</span><strong id="chain">—</strong></div>
+      <div><span>Total manifest</span><strong id="count">—</strong></div>
+    </section>
+    <p id="feedback" role="status" hidden></p>
+    <div class="workspace">
+      <section class="card" aria-labelledby="manifest-title">
+        <div class="card-title"><h2 id="manifest-title">Status manifest</h2>
+          <form id="lookup"><label for="lookup-id">ID</label><input id="lookup-id" inputmode="numeric" pattern="[1-9][0-9]*" required><button> Buka </button></form>
+        </div>
+        <div id="manifest-empty" class="empty">Buat manifest baru atau buka manifest yang sudah tercatat.</div>
+        <div id="manifest" hidden>
+          <div class="manifest-heading"><div><span class="muted" id="waste"></span><h3 id="manifest-id"></h3></div><span id="status" class="pill"></span></div>
+          <ol id="timeline" class="timeline"></ol>
+          <dl class="weights">
+            <div><dt>Dideklarasikan</dt><dd id="declared"></dd></div>
+            <div><dt>Diambil</dt><dd id="pickup"></dd></div>
+            <div><dt>Diterima</dt><dd id="received"></dd></div>
+          </dl>
+          <p id="anomaly" class="notice" hidden></p>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="action-title">
+        <div class="card-title"><h2 id="action-title">Aksi akun</h2><span id="action-role" class="muted"></span></div>
+        <div id="action-help" class="empty" hidden></div>
+        <form id="action-form">
+          <label for="action">Tindakan</label><select id="action"></select>
+          <div id="fields" class="fields"></div>
+          <button class="primary" id="submit-action">Kirim transaksi</button>
+        </form>
+        <div id="receipt" class="receipt" hidden></div>
+      </section>
+      <section class="card" aria-labelledby="audit-title">
+        <div class="card-title"><h2 id="audit-title">Jejak audit</h2><button id="refresh-audit" type="button" disabled>Muat ulang</button></div>
+        <ol id="audit" class="events"><li class="empty">Buka manifest untuk melihat event.</li></ol>
+      </section>
+      <section class="card" aria-labelledby="verify-title">
+        <div class="card-title"><h2 id="verify-title">Verifikasi dokumen</h2></div>
+        <form id="verify">
+          <label for="verify-file">File manifest</label>
+          <input id="verify-file" type="file" required>
+          <button id="verify-submit" disabled>Bandingkan hash</button>
+        </form>
+        <div id="verification" class="receipt" hidden></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
