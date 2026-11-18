@@ -12,3 +12,4 @@ dist/
 !.env.example
 
 network/generated/
+network/generated-*/
