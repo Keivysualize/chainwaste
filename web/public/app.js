@@ -70,7 +70,7 @@ async function refreshNetwork() {
     renderNetwork(network);
     if (initial) renderRole();
     if (network.count && network.count !== "0" && !current && !selection && !guide) {
-      await selectManifest(network.count);
+      await selectManifest(network.count, true);
     }
   } catch {
     renderNetwork(null);
@@ -135,7 +135,7 @@ async function refreshAudit(id) {
   }));
 }
 
-async function selectManifest(id) {
+async function selectManifest(id, preserveIndependentForm = false) {
   const request = ++selection;
   try {
     const item = await api(`/api/manifests/${encodeURIComponent(id)}`);
@@ -146,7 +146,7 @@ async function selectManifest(id) {
     $("verify-submit").disabled = false;
     $("refresh-audit").disabled = false;
     renderManifest(item);
-    renderRole();
+    if (!preserveIndependentForm || !["generator", "regulator"].includes($("role").value)) renderRole();
     renderGuide();
     $("audit").replaceChildren(element("li", "Memuat event…", "empty"));
     await refreshAudit(item.id);
