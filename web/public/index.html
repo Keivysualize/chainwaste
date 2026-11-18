@@ -3,74 +3,125 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ChainWaste | Manifest Limbah B3</title>
+  <meta name="theme-color" content="#102e28">
+  <title>ChainWaste · Ruang Kendali Manifest B3</title>
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <header class="bar">
-    <div class="brand"><span class="mark">CW</span> ChainWaste</div>
-    <div class="account"><label for="role">Akun aktif</label><select id="role">
-      <option value="generator">Pabrik penghasil</option>
-      <option value="transporter">Pengangkut</option>
-      <option value="processor">Pengolah</option>
-      <option value="oracle">Oracle timbangan</option>
-      <option value="auditor">Auditor</option>
-      <option value="regulator">Regulator</option>
-    </select><span id="address"></span></div>
-  </header>
-  <main>
-    <div class="heading"><div><h1>Manifest Limbah B3</h1><p>Lacak pengangkutan, penerimaan, dan pengolahan.</p></div>
-      <span class="network-status" id="connection" role="status">Menghubungkan ke Besu…</span>
+  <header class="topbar">
+    <div class="shell navbar">
+      <a class="brand" href="#overview"><span class="mark" aria-hidden="true">CW</span> ChainWaste</a>
+      <nav aria-label="Navigasi dashboard">
+        <a href="#overview">Ringkasan</a><a href="#manifest-section">Manifest</a><a href="#audit-section">Audit</a>
+      </nav>
+      <button class="button button-light" id="open-demo" type="button">Mode demo <span aria-hidden="true">↗</span></button>
     </div>
+  </header>
+  <main class="shell" id="overview">
+    <section class="hero" aria-labelledby="title">
+      <div class="hero-copy">
+        <span class="connection" id="connection" role="status">Menghubungkan ke Besu…</span>
+        <h1 id="title">Ruang kendali<br>manifest B3<span>.</span></h1>
+        <p>Pantau serah terima, selisih berat, dan bukti pengolahan di jaringan Besu QBFT.</p>
+      </div>
+      <div class="hero-network">
+        <div class="network-heading"><span>Jaringan privat</span><strong>Besu <b>QBFT</b></strong></div>
+        <div class="network-diagram" aria-hidden="true">
+          <div class="orbit orbit-outer"></div><div class="orbit orbit-inner"></div>
+          <div class="network-center"><span>RPC</span></div>
+          <div class="network-nodes">
+            <span class="node n1"></span><span class="node n2"></span><span class="node n3"></span><span class="node n4"></span>
+            <span class="node n5"></span><span class="node n6"></span><span class="node n7"></span>
+          </div>
+        </div>
+        <button class="network-link" id="open-network" type="button">Lihat set validator <span aria-hidden="true">↗</span></button>
+      </div>
+    </section>
     <section class="metrics" aria-label="Status jaringan">
-      <div><span>Validator QBFT</span><strong id="validators">—</strong></div>
+      <div><span>Validator terdaftar</span><strong id="validators">—</strong></div>
       <div><span>Blok terbaru</span><strong id="height">—</strong></div>
       <div><span>Chain ID</span><strong id="chain">—</strong></div>
       <div><span>Total manifest</span><strong id="count">—</strong></div>
     </section>
+    <section class="guide" id="guide" aria-label="Panduan demo aktif" hidden>
+      <div><span class="label" id="guide-scenario"></span><h2 id="guide-title"></h2><p id="guide-detail"></p></div>
+      <div class="guide-actions"><button class="button" id="guide-next" type="button"></button><button class="icon-button" id="end-demo" type="button" aria-label="Akhiri panduan demo">×</button></div>
+    </section>
     <p id="feedback" role="status" hidden></p>
     <div class="workspace">
-      <section class="card" aria-labelledby="manifest-title">
-        <div class="card-title"><h2 id="manifest-title">Status manifest</h2>
-          <form id="lookup"><label for="lookup-id">ID</label><input id="lookup-id" inputmode="numeric" pattern="[1-9][0-9]*" required><button> Buka </button></form>
-        </div>
-        <div id="manifest-empty" class="empty">Buat manifest baru atau buka manifest yang sudah tercatat.</div>
-        <div id="manifest" hidden>
-          <div class="manifest-heading"><div><span class="muted" id="waste"></span><h3 id="manifest-id"></h3></div><span id="status" class="pill"></span></div>
-          <ol id="timeline" class="timeline"></ol>
-          <dl class="weights">
-            <div><dt>Dideklarasikan</dt><dd id="declared"></dd></div>
-            <div><dt>Diambil</dt><dd id="pickup"></dd></div>
-            <div><dt>Diterima</dt><dd id="received"></dd></div>
-          </dl>
-          <p id="anomaly" class="notice" hidden></p>
-        </div>
-      </section>
-      <section class="card" aria-labelledby="action-title">
-        <div class="card-title"><h2 id="action-title">Aksi akun</h2><span id="action-role" class="muted"></span></div>
-        <div id="action-help" class="empty" hidden></div>
-        <form id="action-form">
-          <label for="action">Tindakan</label><select id="action"></select>
-          <div id="fields" class="fields"></div>
-          <button class="primary" id="submit-action">Kirim transaksi</button>
-        </form>
-        <div id="receipt" class="receipt" hidden></div>
-      </section>
-      <section class="card" aria-labelledby="audit-title">
-        <div class="card-title"><h2 id="audit-title">Jejak audit</h2><button id="refresh-audit" type="button" disabled>Muat ulang</button></div>
-        <ol id="audit" class="events"><li class="empty">Buka manifest untuk melihat event.</li></ol>
-      </section>
-      <section class="card" aria-labelledby="verify-title">
-        <div class="card-title"><h2 id="verify-title">Verifikasi dokumen</h2></div>
-        <form id="verify">
-          <label for="verify-file">File manifest</label>
-          <input id="verify-file" type="file" required>
-          <button id="verify-submit" disabled>Bandingkan hash</button>
-        </form>
-        <div id="verification" class="receipt" hidden></div>
-      </section>
+      <div class="column">
+        <section class="card manifest-card" id="manifest-section" aria-labelledby="manifest-title">
+          <div class="card-title"><h2 id="manifest-title">Status manifest</h2>
+            <form id="lookup"><label for="lookup-id">ID</label><input id="lookup-id" inputmode="numeric" pattern="[1-9][0-9]*" required><button class="button" type="submit">Buka</button></form>
+          </div>
+          <div id="manifest-empty" class="empty">Buat manifest baru atau buka manifest yang sudah tercatat.</div>
+          <div id="manifest" hidden>
+            <div class="manifest-heading"><div><span class="label" id="waste"></span><h3 id="manifest-id"></h3></div><span id="status" class="pill"></span></div>
+            <ol id="timeline" class="timeline" aria-label="Tahap manifest"></ol>
+            <div class="weight-heading"><h4>Perbandingan berat</h4><span class="muted" id="tolerance"></span></div>
+            <dl class="weights">
+              <div><dt>Dideklarasikan</dt><dd id="declared"></dd><progress id="declared-bar" aria-label="Berat deklarasi"></progress></div>
+              <div><dt>Diambil</dt><dd id="pickup"></dd><progress id="pickup-bar" aria-label="Berat pengambilan"></progress></div>
+              <div><dt>Diterima</dt><dd id="received"></dd><progress id="received-bar" aria-label="Berat penerimaan"></progress></div>
+            </dl>
+            <div id="anomaly" class="notice" hidden></div>
+          </div>
+        </section>
+        <section class="card" id="audit-section" aria-labelledby="audit-title">
+          <div class="card-title"><h2 id="audit-title">Jejak audit</h2><button class="button" id="refresh-audit" type="button" disabled>Muat ulang</button></div>
+          <ol id="audit" class="events"><li class="empty">Buka manifest untuk melihat event.</li></ol>
+        </section>
+      </div>
+      <div class="column">
+        <section class="card actions" id="actions" aria-labelledby="action-title">
+          <div class="card-title"><h2 id="action-title">Aksi transaksi</h2></div>
+          <div class="account">
+            <div><label for="role">Akun aktif</label><select id="role">
+              <option value="generator">Pabrik penghasil</option>
+              <option value="transporter">Pengangkut</option>
+              <option value="processor">Pengolah</option>
+              <option value="oracle">Oracle timbangan</option>
+              <option value="auditor">Auditor</option>
+              <option value="regulator">Regulator</option>
+            </select></div><span id="address"></span>
+          </div>
+          <div id="action-help" class="empty" hidden></div>
+          <form id="action-form">
+            <label for="action">Tindakan</label><select id="action"></select>
+            <div id="fields" class="fields"></div>
+            <button class="button button-primary" id="submit-action" type="submit">Kirim transaksi</button>
+          </form>
+          <div id="receipt" class="receipt" aria-live="polite" hidden></div>
+        </section>
+        <section class="card" id="verify-section" aria-labelledby="verify-title">
+          <div class="card-title"><h2 id="verify-title">Verifikasi dokumen</h2></div>
+          <form id="verify">
+            <label for="verify-file">File manifest</label>
+            <input id="verify-file" type="file" required>
+            <button class="button" id="verify-submit" type="submit" disabled>Bandingkan hash</button>
+          </form>
+          <div class="verify-demo" id="verify-demo" hidden>
+            <button class="button" id="verify-original" type="button">Cek contoh asli</button>
+            <button class="button" id="verify-changed" type="button">Cek contoh diubah</button>
+          </div>
+          <div id="verification" class="receipt" aria-live="polite" hidden></div>
+        </section>
+      </div>
     </div>
   </main>
+  <dialog id="demo-dialog" aria-labelledby="demo-title">
+    <form method="dialog"><button class="icon-button close" aria-label="Tutup mode demo">×</button></form>
+    <h2 id="demo-title">Pilih skenario demo</h2>
+    <p>Setiap transaksi tetap perlu kamu konfirmasi. Panduan mengarahkan akun, berat, dan berkas untuk tiap tahap.</p>
+    <button type="button" class="scenario" id="demo-normal"><strong>Alur normal</strong><span>10.000 → 9.800 kg · Selisih 2%</span></button>
+    <button type="button" class="scenario" id="demo-anomaly"><strong>Anomali berat</strong><span>10.000 → 1.000 kg · Selisih 90%</span></button>
+  </dialog>
+  <dialog id="network-dialog" aria-labelledby="network-title">
+    <form method="dialog"><button class="icon-button close" aria-label="Tutup set validator">×</button></form>
+    <h2 id="network-title">Set validator QBFT</h2>
+    <p id="network-detail"></p>
+    <ol id="validator-list"></ol>
+  </dialog>
 </body>
 </html>

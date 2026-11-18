@@ -23,6 +23,9 @@ let network;
 let current;
 let busy = false;
 let selection = 0;
+let refreshing = false;
+let guide;
+const sampleDocument = "ChainWaste - dokumen demonstrasi manifest B3";
 
 async function api(path, data) {
   const response = await fetch(path, data === undefined ? undefined : {
@@ -39,24 +42,41 @@ function feedback(message, bad = false) {
   $("feedback").classList.toggle("bad", bad);
 }
 
+function renderNetwork(state) {
+  const health = state?.health ?? "offline";
+  const connection = $("connection");
+  connection.textContent = {
+    online: "RPC Besu terhubung",
+    partial: "RPC terhubung · data belum lengkap",
+    offline: "RPC Besu tidak terhubung",
+  }[health];
+  connection.classList.toggle("bad", health !== "online");
+  $("validators").textContent = state?.validators?.length ?? "—";
+  $("height").textContent = state?.height != null ? format(state.height) : "—";
+  $("chain").textContent = state?.height != null ? state.chainId : "—";
+  $("count").textContent = state?.count != null ? format(state.count) : "—";
+  $("open-network").disabled = !state?.validators;
+  $("network-detail").textContent = "Alamat berikut adalah anggota set validator di blockchain. Status proses tiap node dapat dilihat di Docker.";
+  $("validator-list").replaceChildren(...(state?.validators ?? []).map((address) => element("li", address)));
+  $("submit-action").disabled = busy || health !== "online";
+}
+
 async function refreshNetwork() {
+  if (refreshing) return;
+  refreshing = true;
   try {
     const initial = !network;
     network = await api("/api/state");
-    $("connection").textContent = "RPC Besu terhubung";
-    $("connection").classList.remove("bad");
-    $("validators").textContent = network.validators.length;
-    $("validators").title = network.validators.join("\n");
-    $("height").textContent = format(network.height);
-    $("chain").textContent = network.chainId;
-    $("count").textContent = format(network.count);
-    if (initial) {
-      renderRole();
-      if (network.count !== "0" && !current && !selection) await selectManifest(network.count);
+    renderNetwork(network);
+    if (initial) renderRole();
+    if (network.count && network.count !== "0" && !current && !selection && !guide) {
+      await selectManifest(network.count);
     }
   } catch {
-    $("connection").textContent = "RPC Besu tidak terhubung";
-    $("connection").classList.add("bad");
+    renderNetwork(null);
+    if (!network) renderRole();
+  } finally {
+    refreshing = false;
   }
 }
 
@@ -76,8 +96,11 @@ function renderManifest(item) {
   $("status").textContent = stages[item.status] ?? item.status;
   $("status").classList.toggle("bad", item.flagged);
   const names = Object.keys(stages);
-  $("timeline").replaceChildren(...names.map((name, index) => element("li", stages[name],
-    index <= names.indexOf(item.status) ? "complete" : "")));
+  $("timeline").replaceChildren(...names.map((name, index) => {
+    const step = element("li", stages[name], index <= names.indexOf(item.status) ? "complete" : "");
+    if (name === item.status) step.setAttribute("aria-current", "step");
+    return step;
+  }));
   $("declared").textContent = weight(item.declaredWeightKg);
   $("pickup").textContent = weight(item.pickupWeightKg);
   $("received").textContent = weight(item.receivedWeightKg);
@@ -86,6 +109,13 @@ function renderManifest(item) {
   const compared = ["Received", "Treated"].includes(item.status);
   const delta = pickup && received ? Math.abs(received - pickup) / pickup * 100 : 0;
   const percent = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
+  const maxWeight = Math.max(Number(item.declaredWeightKg), pickup, received, 1);
+  for (const [name, value] of Object.entries({ declared: Number(item.declaredWeightKg), pickup, received })) {
+    $(`${name}-bar`).max = maxWeight;
+    $(`${name}-bar`).value = value;
+  }
+  $("tolerance").textContent = `Toleransi ${percent.format(Number(item.toleranceBps) / 100)}%`;
+  $("received-bar").classList.toggle("alert", compared && delta > Number(item.toleranceBps) / 100);
   $("anomaly").hidden = !item.flagged && !(compared && delta > Number(item.toleranceBps) / 100);
   $("anomaly").textContent = item.flagged
     ? `Flag terbuka. ${compared ? `Selisih ${percent.format(delta)}% · toleransi ${percent.format(Number(item.toleranceBps) / 100)}%. ` : ""}Penyelesaian memerlukan auditor.`
@@ -117,6 +147,7 @@ async function selectManifest(id) {
     $("refresh-audit").disabled = false;
     renderManifest(item);
     renderRole();
+    renderGuide();
     $("audit").replaceChildren(element("li", "Memuat event…", "empty"));
     await refreshAudit(item.id);
   } catch (error) {
@@ -143,7 +174,6 @@ function renderRole() {
   const address = network?.actors[role];
   $("address").textContent = address ? `${address.slice(0, 8)}…${address.slice(-4)}` : "";
   $("address").title = address ?? "";
-  $("action-role").textContent = roles[role];
   const availableActions = network ? available(role) : [];
   $("action-form").hidden = !availableActions.length;
   $("action-help").hidden = !!availableActions.length;
@@ -155,6 +185,7 @@ function renderRole() {
     option.value = action;
     return option;
   }));
+  $("action").value = availableActions[0] ?? "";
   renderFields();
 }
 
@@ -164,7 +195,7 @@ function renderFields() {
     transporter: ["Alamat pengangkut", "text", network?.actors.transporter],
     processor: ["Alamat pengolah", "text", network?.actors.processor],
     wasteCode: ["Kode limbah", "text", "B3-DEMO"],
-    kg: ["Berat (kg)", "number", action === "received-weight" ? "9800" : "10000"],
+    kg: ["Berat (kg)", "number", action === "received-weight" ? (guide?.id === current?.id && guide?.mode === "anomaly" ? "1000" : "9800") : "10000"],
     file: [fileLabels[action], "file", ""],
     address: ["Alamat wallet", "text", ""],
     targetRole: ["Peran tujuan", "select", ""],
@@ -190,7 +221,83 @@ function renderFields() {
     if (type === "number") { control.min = 1; control.max = 100000; control.step = 1; }
     return [label, control];
   }));
+  const file = $("field-file");
+  if (file && guide && ((!guide.id && action === "create") || guide.id === current?.id)) {
+    const sample = element("button", "Pakai berkas demo", "sample-file");
+    sample.type = "button";
+    sample.addEventListener("click", () => {
+      const content = {
+        create: sampleDocument,
+        "pickup-weight": "Segel uji ChainWaste",
+        resolve: "Auditor meninjau perbedaan berat dalam simulasi ChainWaste.",
+        treat: "Pengolahan selesai dalam simulasi ChainWaste.",
+      }[action];
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([content], `chainwaste-${action}.txt`, { type: "text/plain" }));
+      file.files = transfer.files;
+    });
+    $("fields").append(sample);
+  }
 }
+
+function nextStep() {
+  if (!guide.id) return ["Pabrik membuat manifest", "Pilih berkas demo, lalu kirim transaksi pembuatan.", "generator"];
+  if (current?.id !== guide.id) return ["Buka manifest demo", "Panduan mengikuti manifest yang dibuat untuk skenario ini.", "manifest"];
+  if (current.flagged) return ["Auditor meninjau anomali", "Tunjukkan selisih berat dan flag sebelum auditor mengirim catatan resolusi.", "auditor"];
+  if (current.status === "Created" && current.pickupWeightKg === "0") {
+    return ["Oracle mencatat pengambilan", "Gunakan 10.000 kg dan berkas segel demo.", "oracle"];
+  }
+  if (current.status === "Created") return ["Pengangkut menjemput limbah", "Konfirmasi pengambilan untuk mengubah status menjadi Dalam perjalanan.", "transporter"];
+  if (current.status === "InTransit" && current.receivedWeightKg === "0") {
+    return ["Oracle mencatat penerimaan", `Catat ${guide.mode === "anomaly" ? "1.000" : "9.800"} kg sesuai skenario.`, "oracle"];
+  }
+  if (current.status === "InTransit") return ["Pengolah menerima limbah", "Konfirmasi penerimaan dan perhatikan apakah kontrak membuka flag.", "processor"];
+  if (current.status === "Received") return ["Pengolah mencatat penyelesaian", "Kirim transaksi dengan berkas bukti pengolahan.", "processor"];
+  return ["Manifest selesai", "Tunjukkan jejak audit. Gunakan verifikasi untuk membandingkan hash dokumen.", "verify"];
+}
+
+function renderGuide() {
+  $("guide").hidden = !guide;
+  $("verify-demo").hidden = !guide?.sample || guide.id !== current?.id || current?.status !== "Treated";
+  if (!guide) return;
+  const [title, detail, target] = nextStep();
+  $("guide-scenario").textContent = guide.mode === "anomaly" ? "Demo anomali berat" : "Demo alur normal";
+  $("guide-title").textContent = title;
+  $("guide-detail").textContent = detail;
+  $("guide-next").textContent = target === "verify" ? "Ke verifikasi"
+    : target === "manifest" ? "Buka manifest" : `Ke akun ${roles[target]}`;
+}
+
+function openActions(role) {
+  $("role").value = role;
+  renderRole();
+  $("actions").scrollIntoView({ block: "nearest" });
+  $("role").focus({ preventScroll: true });
+}
+
+function startDemo(mode) {
+  guide = { mode };
+  $("demo-dialog").close();
+  renderGuide();
+  openActions("generator");
+}
+
+$("open-demo").addEventListener("click", () => $("demo-dialog").showModal());
+$("open-network").addEventListener("click", () => $("network-dialog").showModal());
+$("demo-normal").addEventListener("click", () => startDemo("normal"));
+$("demo-anomaly").addEventListener("click", () => startDemo("anomaly"));
+$("end-demo").addEventListener("click", () => { guide = undefined; renderGuide(); renderRole(); });
+$("guide-next").addEventListener("click", () => {
+  const target = nextStep()[2];
+  if (target === "verify") {
+    $("verify-section").scrollIntoView({ block: "nearest" });
+    $("verify-file").focus({ preventScroll: true });
+  } else if (target === "manifest") {
+    selectManifest(guide.id);
+  } else {
+    openActions(target);
+  }
+});
 
 function base64(file) {
   if (file.size > 1_048_576) throw new Error("Batas file 1 MiB.");
@@ -214,7 +321,8 @@ $("refresh-audit").addEventListener("click", () => {
 });
 $("action-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (busy) return;
+  if (busy || network?.health !== "online") return;
+  const activeGuide = guide;
   const action = $("action").value;
   const role = $("role").value;
   const data = new FormData(event.target);
@@ -226,10 +334,16 @@ $("action-form").addEventListener("submit", async (event) => {
   try {
     const payload = Object.fromEntries(data);
     if (data.has("file")) payload.file = await base64(data.get("file"));
+    const original = activeGuide && !activeGuide.id && action === "create"
+      && await data.get("file").text() === sampleDocument;
     const receipt = await api(`/api/actions/${action}`, { ...payload, role, id: current?.id });
     $("receipt").textContent = `Blok ${format(receipt.block)} · ${format(receipt.gasUsed)} gas\n${receipt.hash}`;
     $("receipt").hidden = false;
     feedback(receipt.events.map(({ name }) => events[name] ?? name).join(" · ") || "Transaksi tercatat.");
+    if (activeGuide && activeGuide === guide && !activeGuide.id && action === "create") {
+      activeGuide.id = receipt.id;
+      activeGuide.sample = original;
+    }
     if (receipt.id) await selectManifest(receipt.id);
     await refreshNetwork();
   } catch (error) {
@@ -237,17 +351,16 @@ $("action-form").addEventListener("submit", async (event) => {
   } finally {
     busy = false;
     $("role").disabled = false;
-    $("submit-action").disabled = false;
+    $("submit-action").disabled = network?.health !== "online" || $("connection").classList.contains("bad");
   }
 });
-$("verify").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (!current) return;
+async function verifyFile(file) {
+  if (!current || !file) return;
   const id = current.id;
   $("verify-submit").disabled = true;
   $("verification").hidden = true;
   try {
-    const result = await api("/api/verify", { id, file: await base64($("verify-file").files[0]) });
+    const result = await api("/api/verify", { id, file: await base64(file) });
     if (current.id !== id) return;
     $("verification").textContent = `${result.matches ? "Hash cocok" : "Hash berbeda"}\nOn-chain: ${result.expected}\nFile: ${result.actual}`;
     $("verification").classList.toggle("bad", !result.matches);
@@ -257,7 +370,13 @@ $("verify").addEventListener("submit", async (event) => {
   } finally {
     $("verify-submit").disabled = !current;
   }
+}
+$("verify").addEventListener("submit", (event) => {
+  event.preventDefault();
+  verifyFile($("verify-file").files[0]);
 });
+$("verify-original").addEventListener("click", () => verifyFile(new Blob([sampleDocument])));
+$("verify-changed").addEventListener("click", () => verifyFile(new Blob([`${sampleDocument} (diubah)`])));
 
 renderRole();
 refreshNetwork();

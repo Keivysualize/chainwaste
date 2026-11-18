@@ -197,12 +197,20 @@ const server = createServer(async (req, res) => {
       throw new RequestError("Origin tidak diizinkan.", 403);
     }
     if (req.method === "GET" && path === "/api/state") {
-      const [height, validators, count] = await Promise.all([
+      const [height, validators, count] = await Promise.allSettled([
         provider.send("eth_blockNumber", []),
         provider.send("qbft_getValidatorsByBlockNumber", ["latest"]),
         registry.manifestCount(),
       ]);
-      return json(res, 200, { height: Number(height), validators, count, chainId: deployment.chainId, actors });
+      const block = height.status === "fulfilled" ? Number(height.value) : null;
+      return json(res, 200, {
+        health: block === null ? "offline" : [validators, count].every(({ status }) => status === "fulfilled") ? "online" : "partial",
+        height: block,
+        validators: validators.status === "fulfilled" ? validators.value : null,
+        count: count.status === "fulfilled" ? count.value : null,
+        chainId: deployment.chainId,
+        actors,
+      });
     }
     const match = /^\/api\/manifests\/([1-9][0-9]{0,77})(\/audit)?$/.exec(path);
     if (req.method === "GET" && match) {
